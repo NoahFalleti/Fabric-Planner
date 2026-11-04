@@ -580,7 +580,7 @@ invBox.addEventListener('click', e => {
   if(b.dataset.inv === 'room'){ c.units = c.units || {}; c.units[b.dataset.g] = U(c, b.dataset.g) + num(b.dataset.n); }
   else if(b.dataset.inv === 'fill'){ if(!num(c.self) && !num(c.rib)) return toast('Enter self and rib first'); if(fillRow(F, c) === false) return; }
   else if(b.dataset.inv === 'menu'){ openFillMenu(b, fi, c); return; }
-  else if(b.dataset.inv === 'zero'){ if(!armed(b, 'Sure?')) return; c.units = {}; }
+  else if(b.dataset.inv === 'zero'){ if(!armed(b, 'Sure?')) return; c.units = {}; c.fillOff = {}; if(menuCtx && menuCtx.c === c) closeFillMenu(); save(); refreshRow(fi, c); return; }
   else return;
   syncInputs(tr, F, c); save(); updateInvTable(fi);
 });
@@ -625,7 +625,7 @@ document.addEventListener('click', e => { if(menu.classList.contains('on') && !m
 document.addEventListener('keydown', e => { if(e.key === 'Escape') closeFillMenu(); });
 window.addEventListener('resize', closeFillMenu);
 $('#copyInv').onclick = () => copy(invTSV());
-$('#clearUnits').onclick = e => { if(!armed(e.currentTarget, 'Click again to clear units')) return; S.inventory.forEach(F => F.colors.forEach(c => c.units = {})); save(); renderInventory(); };
+$('#clearUnits').onclick = e => { if(!armed(e.currentTarget, 'Click again to clear units')) return; S.inventory.forEach(F => F.colors.forEach(c => { c.units = {}; c.fillOff = {}; })); closeFillMenu(); save(); renderInventory(); };
 $('#clearInv').onclick = e => { if(!armed(e.currentTarget, 'Click again to clear yardage')) return; S.inventory.forEach(F => F.colors.forEach(c => { c.self = 0; c.rib = 0; })); save(); renderInventory(); };
 $('#invImport').onclick = () => {
   let cur = null, n = 0, added = 0;
