@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fabric Planner</title>
+<style>
+:root{
+  --ink:#1f2a37; --muted:#667085; --navy:#26344a; --line:#e3e7ed; --line2:#cfd5de; --bg:#f4f6f9;
+  --card:#fff; --accent:#2f6fde; --warn:#b42318; --hl:#fdf6dc; --soft:#eef1f5; --zebra:#fafbfc;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:var(--navy);color:#fff}
+.hwrap{max-width:1200px;margin:0 auto;padding:14px 16px;display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+header h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+nav button{background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font:inherit}
+nav button.on{background:#fff;color:var(--navy);border-color:#fff;font-weight:600}
+main{max-width:1200px;margin:0 auto;padding:24px 16px 60px}
+section{display:none} section.on{display:block}
+.intro{margin:0 0 16px}
+h2{font-size:18px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0;max-width:820px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}
+textarea{display:block;width:100%;min-height:170px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line2);border-radius:8px;padding:10px 12px;resize:vertical;background:#fbfcfd}
+textarea:focus,input:focus,select:focus{outline:2px solid #c9d8f6;outline-offset:0;border-color:var(--accent)}
+button.btn{background:var(--card);border:1px solid var(--line2);color:var(--ink);padding:7px 14px;border-radius:6px;cursor:pointer;font:inherit;white-space:nowrap}
+button.btn:hover{border-color:#9aa4b2}
+button.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+button.primary:hover{background:#34465f}
+button.btn.sm{padding:3px 10px;font-size:12px}
+button.link{background:none;border:0;color:var(--accent);cursor:pointer;padding:2px 4px;font:inherit}
+button.x{background:none;border:0;color:#9aa4b2;cursor:pointer;font-size:16px;line-height:1;padding:2px 6px}
+button.x:hover{color:var(--warn)}
+button.armed{background:var(--warn)!important;color:#fff!important;border-color:var(--warn)!important;font-size:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.toolbar .row{gap:10px}
+.spacer{flex:1}
+.warn{background:#fef3f2;border:1px solid #fecdca;color:var(--warn);border-radius:8px;padding:10px 12px;margin:12px 0 0}
+.warn ul{margin:4px 0 0;padding-left:18px}
+.muted{color:var(--muted)} .small{font-size:12px}
+.neg{color:var(--warn);font-weight:600}
+.empty{color:var(--muted);text-align:center;padding:36px 10px}
+
+/* stat cards */
+.grand{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0 0 16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;text-align:center}
+.stat span{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+.stat b{display:block;font-size:24px;margin-top:2px}
+
+/* fabric section */
+.fab{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:20px}
+.fab:first-child{margin-top:0}
+.fabtitle{font-weight:700;background:var(--soft);padding:10px 14px;font-size:14px;border-bottom:1px solid var(--line)}
+.fab .addrow{padding:6px 10px;border-top:1px solid var(--line)}
+
+/* data tables */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+table.data{table-layout:fixed;min-width:640px}
+table.data th,table.data td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+table.data th:first-child,table.data td:first-child{text-align:left;width:180px;padding-left:14px}
+table.data thead th{background:var(--navy);color:#fff;font-weight:600;font-size:12.5px;letter-spacing:.2px;white-space:normal;line-height:1.25;vertical-align:middle;height:44px}
+table.data thead th:not(:first-child){padding:8px 4px;overflow:visible;text-overflow:clip}
+table.data tbody tr:nth-child(even) td{background:var(--zebra)}
+table.data tbody tr:hover td{background:#f2f6fd}
+table.data tr.total td,table.data tfoot td{font-weight:700;background:var(--soft);border-bottom:0}
+table.data td.dash{color:#b5bdc8}
+table.data th.acts,table.data td.acts{width:160px}
+.fillgrp{display:inline-flex}
+.fillgrp .btn.sm:first-child{border-radius:6px 0 0 6px}
+.fillgrp .btn.caret{border-radius:0 6px 6px 0;border-left:0;padding:3px 7px}
+table.data td input.u.off{background:#f3f4f6;color:#9aa4b2;border-style:dashed}
+.fillmenu{position:absolute;z-index:50;display:none;background:#fff;border:1px solid var(--line2);border-radius:8px;box-shadow:0 8px 24px rgba(16,24,40,.14);padding:10px 12px;min-width:220px}
+.fillmenu.on{display:block}
+.fillmenu .fm-h{font-size:12px;color:var(--muted);margin-bottom:6px}
+.fillmenu label{display:flex;align-items:center;gap:8px;padding:5px 2px;cursor:pointer}
+.fillmenu .fm-f{display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+
+/* inputs */
+input,select{font:inherit;color:inherit;border:1px solid var(--line2);border-radius:6px;padding:6px 8px;background:#fff}
+input[inputmode=decimal]{text-align:center;font-variant-numeric:tabular-nums}
+input.hl{background:var(--hl)}
+table.data td input[inputmode=decimal]{width:100%;max-width:100px;display:block;margin:0 auto}
+table.data td input.name{width:100%;border-color:transparent;background:transparent;padding-left:4px;font-weight:600}
+table.data td input.name:hover{border-color:var(--line2);background:#fff}
+table.data td input.name:focus{background:#fff}
+.inv-t .room{height:16px;line-height:16px;font-size:12px;margin-top:2px}
+.inv-t .room .link{padding:0;font-size:12px}
+.inv-t tbody tr.over td{background:#fef3f2}
+.inv-t td.acts > span{display:inline-flex;gap:4px;align-items:center;justify-content:center}
+
+/* tab 2 controls */
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;padding:7px 16px;cursor:pointer;font:inherit;color:var(--ink)}
+.seg button + button{border-left:1px solid var(--line2)}
+.seg button.on{background:var(--navy);color:#fff;font-weight:600}
+.chk{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px}
+.chk select{padding:4px 6px}
+details.card summary{cursor:pointer;font-weight:600}
+details.card[open] summary{margin-bottom:8px}
+
+/* yields */
+.yields th,.yields td{padding:8px 8px;border-bottom:1px solid var(--line);text-align:left}
+.yields thead th{background:var(--navy);color:#fff;font-weight:600;font-size:12.5px}
+.yields td input{width:100%}
+.yields th:nth-child(5),.yields th:nth-child(6),.yields td:nth-child(5),.yields td:nth-child(6){text-align:center;width:100px}
+.yields td:nth-child(5) input,.yields td:nth-child(6) input{width:80px}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+@media (max-width:640px){
+  .grand{grid-template-columns:1fr}
+  nav{margin-left:0}
+  table.data th:first-child,table.data td:first-child{width:140px}
+}
+</style>
+</head>
+<body>
+<header><div class="hwrap">
+  <h1>Fabric Planner</h1>
+  <nav>
+    <button data-tab="order" class="on">New PO Fabric Total</button>
+    <button data-tab="plan">Fabric Working</button>
+    <button data-tab="yields">Yields</button>
+  </nav>
+</div></header>
+
+<main>
+  <!-- PART 1 -->
+  <section id="tab-order" class="on">
+    <div class="intro">
+      <h2>New PO Fabric Total</h2>
+      <p class="sub">Copy the order rows from Sheets (header row included) and paste below. Totals update as you paste.</p>
+    </div>
+    <div class="card">
+      <textarea id="paste" placeholder="Color	Cut	PO	XS	S	M	L	XL	XXL	Total&#10;Ash	Tee	1216	0	70	305	150	170	105	800"></textarea>
+      <div class="toolbar" style="margin:12px 0 0">
+        <div class="row"><button class="btn" id="example">Load example</button><button class="btn" id="clear">Clear</button></div>
+        <button class="btn primary" id="copyOrder">Copy results for Sheets</button>
+      </div>
+      <div id="orderWarn"></div>
+    </div>
+    <div id="orderOut"></div>
+  </section>
+
+  <!-- PART 2 -->
+  <section id="tab-plan">
+    <div class="intro">
+      <h2>Fabric Working</h2>
+      <p class="sub" id="modeHelp"></p>
+    </div>
+    <div class="toolbar">
+      <div class="row">
+        <div class="seg" id="modeSeg">
+          <button data-mode="plan">Plan units</button>
+          <button data-mode="max">Max per cut</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="hideEmpty"> Only colors with fabric</label>
+        <label class="chk" id="roundWrap">Fill rounds to
+          <select id="invRound"><option>1</option><option>5</option><option>6</option><option>10</option><option>12</option><option>25</option><option>50</option></select></label>
+      </div>
+      <div class="row">
+        <button class="btn" id="clearUnits">Clear units</button>
+        <button class="btn" id="clearInv">Clear yardage</button>
+        <button class="btn primary" id="copyInv">Copy for Sheets</button>
+      </div>
+    </div>
+    <details class="card" id="invPasteBox"><summary>Paste yardage from Sheets</summary>
+      <p class="sub small" style="margin:0 0 8px">Paste rows of Color, Self, Rib. Put the fabric name on its own line above each group (e.g. 30/1 Triblend Jersey). Dashes and blanks count as 0. New colors are added.</p>
+      <textarea id="invPaste" style="min-height:120px" placeholder="30/1 Triblend Jersey&#10;Navy	480	–&#10;Royal	951	45"></textarea>
+      <div class="row" style="margin-top:10px"><button class="btn primary" id="invImport">Update yardage</button><span class="small muted" id="invMsg"></span></div>
+    </details>
+    <div id="inventory"></div>
+  </section>
+
+  <!-- YIELDS -->
+  <section id="tab-yields">
+    <div class="intro"><h2>Yields</h2>
+    <p class="sub">Yards per unit. "Also matches" lists other cut names that should use the same line. A color with "Cotton" in it (e.g. White Cotton) uses the "Cotton &lt;cut&gt;" line when there is one.</p></div>
+    <div class="card">
+      <div class="tablewrap">
+        <table class="yields">
+          <thead><tr><th>Cut</th><th style="text-align:left">Column label</th><th style="text-align:left">Also matches</th><th style="text-align:left">Fabric</th><th>Self (yd)</th><th>Rib (yd)</th><th></th></tr></thead>
+          <tbody id="yieldBody"></tbody>
+        </table>
+      </div>
+      <datalist id="fabricList"></datalist>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="addYield">+ Add cut</button>
+        <span class="spacer"></span>
+        <button class="btn" id="resetYields">Reset to defaults</button>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+const KEY = 'wif-fabric-planner-v1';
+const DEFAULT_GARMENTS = [
+  {name:'Tee', label:'Unisex Tees', aliases:'Regular tee, Unisex tee, Regular', fabric:'30/1 Triblend Jersey', self:0.82, rib:0.05},
+  {name:'Crop Tee', label:'Crop Tees', aliases:'Cropped tee', fabric:'30/1 Triblend Jersey', self:0.48, rib:0.05},
+  {name:'High-Neck Tank', label:'High-Neck Tanks', aliases:'Tank, High neck tank', fabric:'30/1 Triblend Jersey', self:0.00, rib:0.55},
+  {name:'Youth Tee', aliases:'', fabric:'30/1 Triblend Jersey', self:0.60, rib:0.05},
+  {name:'Cotton Tee', label:'Unisex Tees', aliases:'Unisex cotton tee', fabric:'20/1 Cotton Jersey', self:0.82, rib:0.05},
+  {name:'Easy Tee', aliases:'', fabric:'20/1 Cotton Jersey', self:0.65, rib:0.05},
+  {name:'Long Sleeve', aliases:'Long-sleeve tee, Long sleeve tee, LS tee', fabric:'20/1 Triblend Jersey', self:1.00, rib:0.05},
+  {name:'Hoodie', aliases:'', fabric:'Triblend Fleece', self:1.25, rib:0.10},
+  {name:'Crew Sweatshirt', aliases:'Crewneck sweatshirt, Crew, Crewneck', fabric:'Triblend Fleece', self:1.10, rib:0.10},
+  {name:'Cropped Crew Sweatshirt', label:'Crop Crews', aliases:'Crop sweatshirt, Crop crew, Crop crew sweatshirt, Cropped crew', fabric:'Triblend Fleece', self:1.00, rib:0.10},
+  {name:'Pullover Hoodie', aliases:'', fabric:'Triblend Fleece', self:1.15, rib:0.10},
+  {name:'Youth Hoodie', aliases:'', fabric:'Triblend Fleece', self:1.00, rib:0.10}
+];
+const DEFAULT_INVENTORY = [
+  {fabric:'30/1 Triblend Jersey', colors:['Ash','Black','Gray','Navy','Oatmeal','Brown','Orange','Red','Royal','Green','Yellow','Purple','Kelly Green','Light Blue','Teal','Honolulu Blue','Maroon']},
+  {fabric:'20/1 Cotton Jersey', colors:['Mineral Cotton','Black Cotton','White Cotton','Brown Cotton','Navy Cotton','Red Cotton','Bone Cotton','Pink Cotton']},
+  {fabric:'Triblend Fleece', colors:['Ash','Black','Gray','Oatmeal','Navy','Red','Royal','Brown','Kelly Green','Orange','Purple','Green','Yellow']}
+];
+const EXAMPLE = `Color\tCut\tPO\tXS\tS\tM\tL\tXL\tXXL\tTotal
+Yellow\tTee\t1216\t0\t50\t50\t85\t70\t45\t300
+White Cotton\tTee\t1216\t0\t35\t65\t80\t75\t45\t300
+
+Ash\tCrew Sweatshirt\t1216\t0\t195\t310\t305\t290\t100\t1200
+Royal\tCrew Sweatshirt\t1216\t0\t65\t60\t95\t0\t30\t250
+
+Ash\tHoodie\t1216\t0\t130\t135\t200\t200\t135\t800
+Gray\tHoodie\t1216\t0\t65\t70\t100\t100\t65\t400
+Oatmeal\tHoodie\t1216\t0\t60\t40\t75\t80\t45\t300
+Red\tHoodie\t1216\t0\t35\t50\t100\t100\t65\t350
+Royal\tHoodie\t1216\t0\t45\t45\t70\t20\t20\t200
+
+Ash\tCropped Crew Sweatshirt\t1216\t65\t105\t110\t95\t25\t0\t400
+Navy\tCropped Crew Sweatshirt\t1216\t40\t60\t70\t60\t20\t0\t250
+
+Ash\tPullover Hoodie\t1216\t40\t75\t85\t70\t30\t0\t300
+Red\tPullover Hoodie\t1216\t30\t60\t75\t55\t30\t0\t250
+Black\tPullover Hoodie\t1216\t35\t75\t90\t65\t35\t0\t300
+
+White\tEasy Tee\t1216\t25\t0\t170\t0\t105\t0\t300
+Bone\tEasy Tee\t1216\t90\t110\t85\t45\t20\t0\t350
+
+Gray\tYouth Tee\t1216\t0\t70\t115\t105\t60\t0\t350
+Ash\tYouth Tee\t1216\t0\t115\t115\t25\t45\t0\t300
+Red\tYouth Tee\t1216\t0\t65\t95\t85\t55\t0\t300
+Black\tYouth Tee\t1216\t0\t60\t105\t75\t60\t0\t300
+
+Ash\tYouth Hoodie\t1216\t0\t65\t65\t55\t65\t0\t250
+Black\tYouth Hoodie\t1216\t0\t50\t85\t75\t40\t0\t250`;
+
+const clone = o => JSON.parse(JSON.stringify(o));
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = x => { const v = parseFloat(String(x ?? '').replace(/[,\s$]/g,'')); return isFinite(v) ? v : 0; };
+const f2 = n => (Math.round(n*100)/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const f0 = n => Math.round(n).toLocaleString('en-US');
+const t2 = n => (Math.round(n*100)/100).toFixed(2);
+const plural = s => /s$/i.test(s) ? s : s + 's';
+const gLabel = n => { const g = S.garments.find(x => x.name === n); return (g && g.label && g.label.trim()) || plural(n); };
+const norm = s => String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'').replace(/s$/,'');
+const uid = () => Math.random().toString(36).slice(2,9);
+
+function load(){ try { const v = localStorage.getItem(KEY); return v ? JSON.parse(v) : null; } catch(e){ return null; } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+let S = load() || {};
+if(!Array.isArray(S.garments)) S.garments = clone(DEFAULT_GARMENTS);
+if(!Array.isArray(S.plans)) S.plans = [];
+if(typeof S.paste !== 'string') S.paste = '';
+S.garments.forEach(g => { if(g.label === undefined){ const d = DEFAULT_GARMENTS.find(x => x.name === g.name); g.label = d && d.label ? d.label : ''; } });
+function defaultInventory(){ return DEFAULT_INVENTORY.map(f => ({ fabric: f.fabric, colors: f.colors.map(c => ({ id: Math.random().toString(36).slice(2,9), name: c, self: 0, rib: 0 })) })); }
+if(!Array.isArray(S.inventory)) S.inventory = defaultInventory();
+
+function armed(btn, text){
+  if(btn.dataset.armed === '1'){ clearTimeout(btn._t); btn.dataset.armed = ''; btn.classList.remove('armed'); btn.innerHTML = btn._label; return true; }
+  btn._label = btn.innerHTML; btn.dataset.armed = '1'; btn.classList.add('armed'); btn.textContent = text || 'Click again to confirm';
+  btn._t = setTimeout(() => { btn.dataset.armed = ''; btn.classList.remove('armed'); btn.innerHTML = btn._label; }, 3000);
+  return false;
+}
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('on'), 1600); }
+function copy(text){
+  const done = () => toast('Copied — paste into Sheets');
+  if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(text).then(done, () => fallback()); } else fallback();
+  function fallback(){ const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); done(); }catch(e){} ta.remove(); }
+}
+
+/* ---------- garments ---------- */
+function findGarment(name){
+  const n = norm(name); if(!n) return null;
+  for(const g of S.garments){
+    if(norm(g.name) === n) return g;
+    if(String(g.aliases||'').split(',').some(a => norm(a) === n)) return g;
+  }
+  return null;
+}
+function getG(name){ return S.garments.find(g => g.name === name) || null; }
+function fabrics(){ const out = []; S.garments.forEach(g => { const f = (g.fabric||'').trim() || 'Unassigned'; if(!out.includes(f)) out.push(f); }); return out; }
+function gFabric(g){ return (g.fabric||'').trim() || 'Unassigned'; }
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === 'tab-' + b.dataset.tab));
+  if(b.dataset.tab === 'plan') renderInventory();
+  if(b.dataset.tab === 'yields') renderYields();
+});
+
+/* ---------- PART 1: order → fabric ---------- */
+const SIZE_RE = /^(xxs|xs|s|m|l|xl|xxl|xxxl|[2-6]x|[2-6]xl|os|one ?size|y?xs|ys|ym|yl|yxl)$/i;
+function parseOrder(text){
+  const items = [], warnings = [];
+  let I = null;
+  for(const raw of text.split(/\r?\n/)){
+    const c = raw.split('\t').map(x => x.trim());
+    if(c.every(x => !x)) continue;
+    const low = c.map(x => x.toLowerCase());
+    if(low.includes('color') && low.includes('cut')){
+      I = { color: low.indexOf('color'), cut: low.indexOf('cut'), total: low.indexOf('total'),
+            sizes: low.map((x,i) => SIZE_RE.test(x) ? i : -1).filter(i => i >= 0) };
+      continue;
+    }
+    const J = I || { color:0, cut:1, total:-1, sizes:[] };
+    const color = c[J.color], cut = c[J.cut];
+    if(!color || !cut) continue;
+    const sizeSum = J.sizes.reduce((a,i) => a + num(c[i]), 0);
+    let total;
+    if(J.total >= 0 && c[J.total] !== undefined && c[J.total] !== '') total = num(c[J.total]);
+    else if(J.sizes.length) total = sizeSum;
+    else { const ns = c.slice(2).filter(x => x !== '' && isFinite(parseFloat(x.replace(/,/g,'')))); total = ns.length ? num(ns[ns.length-1]) : 0; }
+    if(J.sizes.length && J.total >= 0 && Math.abs(sizeSum - total) > 0.001)
+      warnings.push(`${color} ${cut}: sizes add to ${f0(sizeSum)} but Total says ${f0(total)} (using Total).`);
+    items.push({ color, cut, total });
+  }
+  return { items, warnings };
+}
+function resolve(color, cut){
+  let g = null, col = color;
+  if(/\bcotton\b/i.test(color)){
+    g = findGarment('Cotton ' + cut);
+    if(g) col = color.replace(/\s*\bcotton\b\s*/i, ' ').trim() || color;
+  }
+  if(!g) g = findGarment(cut);
+  return { g, color: col };
+}
+function computeOrder(items){
+  const byFab = new Map(), unmatched = [];
+  for(const it of items){
+    const r = resolve(it.color, it.cut);
+    if(!r.g){ unmatched.push(it); continue; }
+    const fab = gFabric(r.g);
+    if(!byFab.has(fab)) byFab.set(fab, { garments: new Set(), colors: new Map() });
+    const F = byFab.get(fab);
+    F.garments.add(r.g.name);
+    const key = r.color.toLowerCase();
+    if(!F.colors.has(key)) F.colors.set(key, { color: r.color, units: {} });
+    const C = F.colors.get(key);
+    C.units[r.g.name] = (C.units[r.g.name] || 0) + it.total;
+  }
+  const order = fabrics();
+  const sections = [...byFab.keys()].sort((a,b) => order.indexOf(a) - order.indexOf(b)).map(fab => {
+    const F = byFab.get(fab);
+    const cols = S.garments.map(g => g.name).filter(n => F.garments.has(n));
+    const rows = [...F.colors.values()].map(C => {
+      let self = 0, rib = 0, units = 0;
+      cols.forEach(n => { const g = getG(n), u = C.units[n] || 0; self += u * g.self; rib += u * g.rib; units += u; });
+      return { color: C.color, self, rib, units, byCut: cols.map(n => C.units[n] || 0) };
+    });
+    const tot = { self: rows.reduce((a,r)=>a+r.self,0), rib: rows.reduce((a,r)=>a+r.rib,0), units: rows.reduce((a,r)=>a+r.units,0),
+                  byCut: cols.map((_,i) => rows.reduce((a,r)=>a+r.byCut[i],0)) };
+    return { fabric: fab, cols, rows, tot };
+  });
+  return { sections, unmatched };
+}
+let lastOrder = null;
+function renderOrder(){
+  const { items, warnings } = parseOrder(S.paste);
+  const res = computeOrder(items); lastOrder = res;
+  const w = [];
+  if(res.unmatched.length){
+    const names = [...new Set(res.unmatched.map(u => u.cut))];
+    w.push(`<div class="warn"><b>No yield found for:</b> ${names.map(n => `${esc(n)} <button class="link" data-addcut="${esc(n)}">add to Yields</button>`).join(', ')}<br><span class="small">These rows are left out of the totals.</span></div>`);
+  }
+  if(warnings.length) w.push(`<div class="warn"><b>Check these rows:</b><ul>${warnings.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`);
+  $('#orderWarn').innerHTML = w.join('');
+  if(!res.sections.length){ $('#orderOut').innerHTML = `<div class="card empty">Paste an order above to see fabric totals.</div>`; return; }
+  const G = res.sections.reduce((a,s) => ({ self:a.self+s.tot.self, rib:a.rib+s.tot.rib, units:a.units+s.tot.units }), {self:0,rib:0,units:0});
+  let h = `<div class="card">`;
+  res.sections.forEach((s, si) => {
+    h += `<div class="fab"><div class="fabtitle">${esc(s.fabric)}</div><div class="tablewrap"><table class="data"><thead><tr><th>Color</th><th>Self (yd)</th><th>Rib (yd)</th>${s.cols.map(c => `<th>${esc(gLabel(c))}</th>`).join('')}</tr></thead><tbody>`;
+    s.rows.forEach((r, ri) => {
+      h += `<tr><td>${esc(r.color)}</td><td>${f2(r.self)}</td><td>${f2(r.rib)}</td>${r.byCut.map(u => `<td>${f0(u)}</td>`).join('')}</tr>`;
+    });
+    h += `<tr class="total"><td>Total</td><td>${f2(s.tot.self)}</td><td>${f2(s.tot.rib)}</td>${s.tot.byCut.map(u => `<td>${f0(u)}</td>`).join('')}</tr></tbody></table></div></div>`;
+  });
+  h += `<div class="fab"><div class="fabtitle">Order Total</div><div class="tablewrap"><table class="data"><thead><tr><th>Fabric</th><th>Self (yd)</th><th>Rib (yd)</th><th>Units</th></tr></thead><tbody>`;
+  res.sections.forEach(s => { h += `<tr><td>${esc(s.fabric)}</td><td>${f2(s.tot.self)}</td><td>${f2(s.tot.rib)}</td><td>${f0(s.tot.units)}</td></tr>`; });
+  h += `<tr class="total"><td>Grand Total</td><td>${f2(G.self)}</td><td>${f2(G.rib)}</td><td>${f0(G.units)}</td></tr></tbody></table></div></div></div>`;
+  $('#orderOut').innerHTML = h;
+}
+function orderTSV(){
+  if(!lastOrder || !lastOrder.sections.length) return '';
+  const L = [];
+  lastOrder.sections.forEach(s => {
+    L.push(s.fabric);
+    L.push(['Color','Self (yd)','Rib (yd)', ...s.cols.map(gLabel)].join('\t'));
+    s.rows.forEach(r => L.push([r.color, t2(r.self), t2(r.rib), ...r.byCut].join('\t')));
+    L.push(['Total', t2(s.tot.self), t2(s.tot.rib), ...s.tot.byCut].join('\t'));
+    L.push('');
+  });
+  L.push('Order Total'); L.push(['Fabric','Self (yd)','Rib (yd)','Units'].join('\t'));
+  let gs=0, gr=0, gu=0;
+  lastOrder.sections.forEach(s => { L.push([s.fabric, t2(s.tot.self), t2(s.tot.rib), s.tot.units].join('\t')); gs+=s.tot.self; gr+=s.tot.rib; gu+=s.tot.units; });
+  L.push(['Grand Total', t2(gs), t2(gr), gu].join('\t'));
+  return L.join('\n');
+}
+$('#paste').value = S.paste;
+$('#paste').addEventListener('input', e => { S.paste = e.target.value; save(); renderOrder(); });
+$('#example').onclick = () => { S.paste = EXAMPLE; $('#paste').value = EXAMPLE; save(); renderOrder(); };
+$('#clear').onclick = () => { S.paste = ''; $('#paste').value = ''; save(); renderOrder(); };
+$('#copyOrder').onclick = () => { const t = orderTSV(); if(t) copy(t); else toast('Nothing to copy yet'); };
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-addcut]');
+  if(a){ S.garments.push({ name: a.dataset.addcut, aliases:'', fabric:'', self:0, rib:0 }); save(); renderOrder();
+    document.querySelector('nav button[data-tab="yields"]').click(); toast('Added — fill in fabric and yields'); return; }
+});
+
+/* ---------- PART 2: fabric → units grid ---------- */
+if(S.invMode !== 'max') S.invMode = 'plan';
+if(!S.invRound) S.invRound = 5;
+function invCuts(fab){ return S.garments.filter(g => gFabric(g) === fab && (g.self > 0 || g.rib > 0)); }
+function maxUnits(g, self, rib){
+  let m = Infinity;
+  if(g.self > 0) m = Math.min(m, self / g.self);
+  if(g.rib > 0) m = Math.min(m, rib / g.rib);
+  return isFinite(m) ? Math.max(0, Math.floor(m + 1e-9)) : 0;
+}
+const dash = (v, fmt) => v > 0 ? fmt(v) : '–';
+const U = (c, n) => num(c.units && c.units[n]);
+function rowCalc(F, c){
+  const cuts = invCuts(F.fabric);
+  let su = 0, ru = 0, units = 0;
+  cuts.forEach(g => { const u = U(c, g.name); su += u * g.self; ru += u * g.rib; units += u; });
+  const remS = num(c.self) - su, remR = num(c.rib) - ru;
+  const room = cuts.map(g => maxUnits(g, Math.max(0, remS), Math.max(0, remR)));
+  return { cuts, su, ru, units, remS, remR, room };
+}
+const fillCount = (F, c) => { const a = invCuts(F.fabric), on = a.filter(g => !isOff(c, g.name)).length; return on < a.length ? ` ${on}/${a.length}` : ''; };
+const isOff = (c, n) => !!(c.fillOff && c.fillOff[n]);
+function fillRow(F, c){
+  const all = invCuts(F.fabric), cuts = all.filter(g => !isOff(c, g.name));
+  if(!cuts.length){ toast('No cuts selected for Fill'); return false; }
+  const step = Math.max(1, num(S.invRound) || 1);
+  const cur = cuts.map(g => U(c, g.name)), tot = cur.reduce((a,b) => a+b, 0);
+  const w = cuts.map((g,i) => tot > 0 ? cur[i] / tot : 1 / cuts.length);
+  let remS = num(c.self), remR = num(c.rib);
+  all.filter(g => isOff(c, g.name)).forEach(g => { remS -= U(c, g.name) * g.self; remR -= U(c, g.name) * g.rib; });
+  remS = Math.max(0, remS); remR = Math.max(0, remR);
+  const sK = cuts.reduce((a,g,i) => a + w[i]*g.self, 0), rK = cuts.reduce((a,g,i) => a + w[i]*g.rib, 0);
+  let k = Infinity; if(sK > 0) k = Math.min(k, remS / sK); if(rK > 0) k = Math.min(k, remR / rK);
+  if(!isFinite(k) || k < 0) k = 0;
+  const out = cuts.map((g,i) => { const u = Math.floor(k * w[i] / step + 1e-9) * step; remS -= u*g.self; remR -= u*g.rib; return u; });
+  for(let guard = 0; guard < 5000; guard++){
+    let best = -1, score = Infinity;
+    cuts.forEach((g,i) => { if(w[i] <= 0) return; if(g.self*step > remS + 1e-9 || g.rib*step > remR + 1e-9) return;
+      const sc = (out[i] + step) / w[i]; if(sc < score){ score = sc; best = i; } });
+    if(best < 0) break;
+    out[best] += step; remS -= cuts[best].self*step; remR -= cuts[best].rib*step;
+  }
+  c.units = c.units || {}; cuts.forEach((g,i) => c.units[g.name] = out[i]);
+}
+function setMode(m){
+  S.invMode = m; save();
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  $('#roundWrap').style.display = m === 'plan' ? '' : 'none';
+  $('#clearUnits').style.display = m === 'plan' ? '' : 'none';
+  $('#modeHelp').innerHTML = m === 'plan'
+    ? 'Type units for each cut. Self and rib left update as you go. <b>+N</b> under a box adds as many as still fit. <b>Fill</b> uses up the rest of the color\'s fabric at the mix you typed (or splits evenly if blank).'
+    : 'Type the self and rib on hand for each color. Each cut column shows the most units that color could make if all its fabric went to that one cut.';
+  renderInventory();
+}
+document.querySelectorAll('#modeSeg button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$('#hideEmpty').checked = !!S.hideEmpty;
+$('#hideEmpty').onchange = e => { S.hideEmpty = e.target.checked; save(); renderInventory(); };
+$('#invRound').value = String(S.invRound);
+$('#invRound').onchange = e => { S.invRound = num(e.target.value); save(); };
+
+function renderInventory(){
+  const box = $('#inventory'); if(!box) return;
+  const plan = S.invMode === 'plan';
+  let h = '<div class="card">';
+  S.inventory.forEach((F, fi) => {
+    const cuts = invCuts(F.fabric);
+    h += `<div class="fab"><div class="fabtitle">${esc(F.fabric)}</div><div class="tablewrap"><table class="data inv-t ${plan ? 'planmode' : ''}" data-fi="${fi}"><thead><tr><th>Color</th><th>Self (yd)</th><th>Rib (yd)</th>${cuts.map(g => `<th>${esc(gLabel(g.name))}</th>`).join('')}${plan ? '<th>Units</th><th>Self left</th><th>Rib left</th>' : ''}<th class="acts"></th></tr></thead><tbody>`;
+    F.colors.forEach(c => {
+      if(S.hideEmpty && !num(c.self) && !num(c.rib)) return;
+      const cells = cuts.map(g => plan
+        ? `<td class="ucell" data-g="${esc(g.name)}"><input class="inv u${isOff(c, g.name) ? ' off' : ''}" title="${isOff(c, g.name) ? 'Not included in Fill' : ''}" type="text" inputmode="decimal" autocomplete="off" data-u="${esc(g.name)}" value="${U(c, g.name) || ''}" placeholder="0"><div class="room"></div></td>`
+        : `<td data-g="${esc(g.name)}"></td>`).join('');
+      h += `<tr data-cid="${c.id}"><td><input class="name" data-v="name" value="${esc(c.name)}" placeholder="Color name"></td>
+        <td><input class="hl inv" type="text" inputmode="decimal" autocomplete="off" data-v="self" value="${c.self || ''}" placeholder="–"></td>
+        <td><input class="hl inv" type="text" inputmode="decimal" autocomplete="off" data-v="rib" value="${c.rib || ''}" placeholder="–"></td>
+        ${cells}${plan ? '<td data-k="units"></td><td data-k="sl"></td><td data-k="rl"></td>' : ''}
+        <td class="acts"><span>${plan ? `<span class="fillgrp"><button class="btn sm" data-inv="fill">Fill${fillCount(F, c)}</button><button class="btn sm caret" data-inv="menu" title="Choose cuts to fill">▾</button></span><button class="link small" data-inv="zero">Clear</button>` : ''}<button class="x" data-inv="del" title="Remove color">×</button></span></td></tr>`;
+    });
+    h += `</tbody></table></div>
+      <div class="addrow"><button class="link small" data-inv="add" data-fi="${fi}">+ Add color</button></div></div>`;
+  });
+  box.innerHTML = h + '</div>';
+  S.inventory.forEach((F, fi) => updateInvTable(fi));
+}
+function updateInvTable(fi){
+  const F = S.inventory[fi], t = document.querySelector(`#inventory table[data-fi="${fi}"]`); if(!t) return;
+  const plan = S.invMode === 'plan', cuts = invCuts(F.fabric);
+  const tot = { self: 0, rib: 0, units: 0, sl: 0, rl: 0 }; cuts.forEach(g => tot[g.name] = 0);
+  const leftHTML = v => v < -1e-9 ? `<span class="neg">${f2(v)}</span>` : f2(v);
+  F.colors.forEach(c => {
+    const tr = t.querySelector(`tr[data-cid="${c.id}"]`); if(!tr) return;
+    tot.self += num(c.self); tot.rib += num(c.rib);
+    if(plan){
+      const r = rowCalc(F, c);
+      cuts.forEach((g,i) => {
+        tot[g.name] += U(c, g.name);
+        const td = tr.querySelector(`td[data-g="${CSS.escape(g.name)}"]`);
+        td.querySelector('.room').innerHTML = r.room[i] > 0 ? `<button class="link" data-inv="room" data-g="${esc(g.name)}" data-n="${r.room[i]}">+${f0(r.room[i])}</button>` : '';
+      });
+      tot.units += r.units; tot.sl += r.remS; tot.rl += r.remR;
+      tr.querySelector('[data-k="units"]').textContent = r.units ? f0(r.units) : '–';
+      const has = num(c.self) || num(c.rib) || r.units;
+      tr.querySelector('[data-k="sl"]').innerHTML = has ? leftHTML(r.remS) : '–';
+      tr.querySelector('[data-k="rl"]').innerHTML = has ? leftHTML(r.remR) : '–';
+      tr.classList.toggle('over', r.remS < -1e-9 || r.remR < -1e-9);
+    } else {
+      cuts.forEach(g => { const m = maxUnits(g, num(c.self), num(c.rib)); tot[g.name] += m;
+        const td = tr.querySelector(`td[data-g="${CSS.escape(g.name)}"]`); td.textContent = dash(m, f0); td.classList.toggle('dash', !m); });
+    }
+  });
+}
+function invTSV(){
+  const plan = S.invMode === 'plan', L = [];
+  S.inventory.forEach(F => {
+    const cuts = invCuts(F.fabric);
+    const rows = F.colors.filter(c => !S.hideEmpty || num(c.self) || num(c.rib));
+    L.push(F.fabric);
+    L.push(['Color','Self (yd)','Rib (yd)', ...cuts.map(g => gLabel(g.name)), ...(plan ? ['Units','Self left (yd)','Rib left (yd)'] : [])].join('\t'));
+    let ts = 0, tr = 0, tu = 0, tsl = 0, trl = 0; const tc = cuts.map(() => 0);
+    rows.forEach(c => {
+      const s = num(c.self), r = num(c.rib); ts += s; tr += r;
+      if(plan){
+        const x = rowCalc(F, c); tu += x.units; tsl += x.remS; trl += x.remR;
+        const us = cuts.map((g,i) => { const u = U(c, g.name); tc[i] += u; return u; });
+        L.push([c.name, t2(s), t2(r), ...us, x.units, t2(x.remS), t2(x.remR)].join('\t'));
+      } else {
+        const ms = cuts.map((g,i) => { const m = maxUnits(g, s, r); tc[i] += m; return m || '–'; });
+        L.push([c.name, s ? t2(s) : '–', r ? t2(r) : '–', ...ms].join('\t'));
+      }
+    });
+    L.push('');
+  });
+  return L.join('\n').trim();
+}
+function findInvRow(e){ const tr = e.target.closest('tr[data-cid]'); if(!tr) return {}; const fi = +tr.closest('table').dataset.fi; const F = S.inventory[fi]; return { tr, fi, F, c: F.colors.find(x => x.id === tr.dataset.cid) }; }
+function syncInputs(tr, F, c){ invCuts(F.fabric).forEach(g => { const i = tr.querySelector(`input[data-u="${CSS.escape(g.name)}"]`); if(i) i.value = U(c, g.name) || ''; }); }
+const invBox = $('#inventory');
+invBox.addEventListener('input', e => {
+  const { fi, c } = findInvRow(e); if(!c) return;
+  const k = e.target.dataset.v, u = e.target.dataset.u;
+  if(k) c[k] = k === 'name' ? e.target.value : num(e.target.value);
+  else if(u){ c.units = c.units || {}; c.units[u] = Math.max(0, Math.round(num(e.target.value))); }
+  else return;
+  save(); updateInvTable(fi);
+});
+invBox.addEventListener('click', e => {
+  const b = e.target.closest('[data-inv]'); if(!b) return;
+  if(b.dataset.inv === 'add'){ const F = S.inventory[+b.dataset.fi]; F.colors.push({ id: uid(), name: '', self: 0, rib: 0, units: {} }); save(); renderInventory();
+    const t = document.querySelector(`#inventory table[data-fi="${b.dataset.fi}"] tbody tr:last-child input`); if(t) t.focus(); return; }
+  const { tr, fi, F, c } = findInvRow(e); if(!c) return;
+  if(b.dataset.inv === 'del'){ if((num(c.self) || num(c.rib)) && !armed(b, 'Remove?')) return; F.colors = F.colors.filter(x => x !== c); save(); renderInventory(); return; }
+  if(b.dataset.inv === 'room'){ c.units = c.units || {}; c.units[b.dataset.g] = U(c, b.dataset.g) + num(b.dataset.n); }
+  else if(b.dataset.inv === 'fill'){ if(!num(c.self) && !num(c.rib)) return toast('Enter self and rib first'); if(fillRow(F, c) === false) return; }
+  else if(b.dataset.inv === 'menu'){ openFillMenu(b, fi, c); return; }
+  else if(b.dataset.inv === 'zero'){ if(!armed(b, 'Sure?')) return; c.units = {}; }
+  else return;
+  syncInputs(tr, F, c); save(); updateInvTable(fi);
+});
+/* per-color fill cut picker */
+const menu = document.createElement('div'); menu.className = 'fillmenu'; document.body.appendChild(menu);
+let menuCtx = null;
+function openFillMenu(btn, fi, c){
+  if(menuCtx && menuCtx.c === c && menu.classList.contains('on')){ closeFillMenu(); return; }
+  const F = S.inventory[fi]; menuCtx = { fi, c };
+  menu.innerHTML = `<div class="fm-h">Fill these cuts for ${esc(c.name || 'this color')}</div>` +
+    invCuts(F.fabric).map(g => `<label><input type="checkbox" data-fm="${esc(g.name)}" ${isOff(c, g.name) ? '' : 'checked'}> ${esc(gLabel(g.name))}</label>`).join('') +
+    `<div class="fm-f"><button class="link small" data-fmall>Select all</button><button class="btn sm primary" data-fmgo>Fill</button></div>`;
+  menu.classList.add('on');
+  const r = btn.getBoundingClientRect(), mw = menu.offsetWidth;
+  menu.style.top = (window.scrollY + r.bottom + 6) + 'px';
+  menu.style.left = Math.max(8, window.scrollX + r.right - mw) + 'px';
+}
+function closeFillMenu(){ menu.classList.remove('on'); menuCtx = null; }
+function refreshRow(fi, c){
+  const tr = document.querySelector(`#inventory table[data-fi="${fi}"] tr[data-cid="${c.id}"]`); if(!tr) return;
+  const F = S.inventory[fi];
+  invCuts(F.fabric).forEach(g => { const i = tr.querySelector(`input[data-u="${CSS.escape(g.name)}"]`); if(!i) return; i.value = U(c, g.name) || ''; i.classList.toggle('off', isOff(c, g.name)); i.title = isOff(c, g.name) ? 'Not included in Fill' : ''; });
+  const fb = tr.querySelector('[data-inv="fill"]'); if(fb) fb.textContent = 'Fill' + fillCount(F, c);
+  updateInvTable(fi);
+}
+menu.addEventListener('change', e => {
+  const n = e.target.dataset.fm; if(!n || !menuCtx) return;
+  const c = menuCtx.c; c.fillOff = c.fillOff || {};
+  if(e.target.checked) delete c.fillOff[n]; else c.fillOff[n] = true;
+  save(); refreshRow(menuCtx.fi, c);
+});
+menu.addEventListener('click', e => {
+  if(!menuCtx) return; const { fi, c } = menuCtx;
+  if(e.target.closest('[data-fmall]')){ c.fillOff = {}; menu.querySelectorAll('[data-fm]').forEach(x => x.checked = true); save(); refreshRow(fi, c); }
+  if(e.target.closest('[data-fmgo]')){
+    if(!num(c.self) && !num(c.rib)) return toast('Enter self and rib first');
+    if(fillRow(S.inventory[fi], c) === false) return;
+    save(); refreshRow(fi, c); closeFillMenu();
+  }
+});
+document.addEventListener('click', e => { if(menu.classList.contains('on') && !menu.contains(e.target) && !e.target.closest('[data-inv="menu"]')) closeFillMenu(); });
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeFillMenu(); });
+window.addEventListener('resize', closeFillMenu);
+$('#copyInv').onclick = () => copy(invTSV());
+$('#clearUnits').onclick = e => { if(!armed(e.currentTarget, 'Click again to clear units')) return; S.inventory.forEach(F => F.colors.forEach(c => c.units = {})); save(); renderInventory(); };
+$('#clearInv').onclick = e => { if(!armed(e.currentTarget, 'Click again to clear yardage')) return; S.inventory.forEach(F => F.colors.forEach(c => { c.self = 0; c.rib = 0; })); save(); renderInventory(); };
+$('#invImport').onclick = () => {
+  let cur = null, n = 0, added = 0;
+  const findFab = s => S.inventory.find(F => norm(F.fabric) === norm(s));
+  for(const raw of $('#invPaste').value.split(/\r?\n/)){
+    const c = raw.split('\t').map(x => x.trim()); if(c.every(x => !x)) continue;
+    const f = findFab(c[0]);
+    if(f && c.slice(1).every(x => !x || isNaN(num(x)) || !/\d/.test(x))){ cur = f; continue; }
+    if(!cur || !c[0] || /^(color|total)$/i.test(c[0])) continue;
+    if(!/\d/.test(c[1] || '') && !/\d/.test(c[2] || '') && !/^[–—-]?$/.test(c[1] || '')) continue;
+    let row = cur.colors.find(x => x.name.toLowerCase() === c[0].toLowerCase());
+    if(!row){ row = { id: uid(), name: c[0], self: 0, rib: 0 }; cur.colors.push(row); added++; }
+    row.self = num(c[1]); row.rib = num(c[2]); n++;
+  }
+  save(); renderInventory();
+  $('#invMsg').textContent = n ? `Updated ${n} color${n === 1 ? '' : 's'}${added ? `, added ${added} new` : ''}.` : 'Nothing matched. Make sure each group starts with its fabric name.';
+};
+
+/* ---------- yields ---------- */
+function renderYields(){
+  $('#fabricList').innerHTML = fabrics().map(f => `<option value="${esc(f)}">`).join('');
+  $('#yieldBody').innerHTML = S.garments.map((g,i) => `<tr data-i="${i}">
+    <td><input data-y="name" value="${esc(g.name)}"></td>
+    <td><input data-y="label" value="${esc(g.label)}" placeholder="${esc(plural(g.name))}"></td>
+    <td><input data-y="aliases" value="${esc(g.aliases)}" placeholder="other names, comma separated"></td>
+    <td><input data-y="fabric" list="fabricList" value="${esc(g.fabric)}" placeholder="Fabric"></td>
+    <td><input class="hl" type="text" inputmode="decimal" autocomplete="off" data-y="self" value="${g.self}"></td>
+    <td><input class="hl" type="text" inputmode="decimal" autocomplete="off" data-y="rib" value="${g.rib}"></td>
+    <td><button class="x" data-del="${i}" title="Remove">×</button></td></tr>`).join('');
+}
+$('#yieldBody').addEventListener('input', e => {
+  const k = e.target.dataset.y; if(!k) return;
+  const g = S.garments[+e.target.closest('tr').dataset.i];
+  const old = g.name;
+  g[k] = (k === 'self' || k === 'rib') ? num(e.target.value) : e.target.value;
+  if(k === 'name' && old !== g.name) S.inventory.forEach(F => F.colors.forEach(c => { if(c.units && old in c.units){ c.units[g.name] = c.units[old]; delete c.units[old]; } }));
+  save(); renderOrder();
+});
+$('#yieldBody').addEventListener('change', e => { if(e.target.dataset.y === 'fabric') renderYields(); renderInventory(); });
+$('#yieldBody').addEventListener('click', e => {
+  const d = e.target.closest('[data-del]'); if(!d) return;
+  S.garments.splice(+d.dataset.del, 1); save(); renderYields(); renderOrder();
+});
+$('#addYield').onclick = () => { S.garments.push({ name:'New cut', aliases:'', fabric:'', self:0, rib:0 }); save(); renderYields(); };
+$('#resetYields').onclick = e => { if(armed(e.currentTarget, 'Click again to reset')){ S.garments = clone(DEFAULT_GARMENTS); save(); renderYields(); renderOrder(); } };
+
+renderOrder();
+setMode(S.invMode);
+})();
+</script>
+</body>
+</html>
